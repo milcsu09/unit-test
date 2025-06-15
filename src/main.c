@@ -5,17 +5,8 @@ main (void)
 {
   ut_push_case ("main");
     ut_push_case ("integer-math");
-      ut_push_case ("integer-math-1-2");
-        assert_eq (1, 2);
-      ut_pop_case ();
-      ut_push_case ("integer-math-2-4");
-        assert_eq (2, 4);
-      ut_pop_case ();
-      ut_push_case ("integer-math-3-6");
-        assert_eq (3, 6);
-      ut_pop_case ();
-      ut_push_case ("integer-math-4-8");
-        assert_eq (4, 8);
+      ut_push_case ("1 + 1");
+        assert_eq (1 + 1, 3);
       ut_pop_case ();
     ut_pop_case ();
 

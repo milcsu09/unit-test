@@ -1,0 +1,13 @@
+main
+  integer-math
+    1 + 1
+      src/main.c:9: FAILED: expected `1 + 1` to be `3`, but was `2`
+    FAILED (1)
+  FAILED (1)
+
+  float-math
+    src/main.c:14: PASSED
+    src/main.c:15: PASSED
+    src/main.c:16: PASSED
+  PASSED (3)
+PARTIAL (3 passed 1 failed) 

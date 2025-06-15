@@ -11,6 +11,9 @@
 #define BGREEN "\033[1;32m"
 #define BRED "\033[1;31m"
 #define GRAY "\033[90m"
+#define BGRAY "\033[1;90m"
+#define BYELLOW "\033[1;33m"
+
 
 #define C(code) color_allowed ? code : ""
 
@@ -32,7 +35,7 @@ static size_t case_stack_previous_depth = -1;
 
 
 static int ut_initalized = 0;
-static int color_allowed = 0;
+static int color_allowed = 1;
 
 
 void
@@ -43,7 +46,15 @@ ut_init ()
 
   ut_initalized = 1;
 
-  color_allowed = isatty (fileno (stderr));
+  if (color_allowed == 1)
+    color_allowed = isatty (fileno (stderr));
+}
+
+
+void
+ut_set_color_allowed (int a)
+{
+  color_allowed = a;
 }
 
 
@@ -56,7 +67,7 @@ ut_push_case (const char *name)
     fprintf (stderr, "\n");
 
   fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
-  fprintf (stderr, "%s<%s>%s\n", C (GRAY), name, C (RESET));
+  fprintf (stderr, "%s%s%s\n", C (BGRAY), name, C (RESET));
 
   struct stack_item item;
 
@@ -82,10 +93,22 @@ ut_pop_case ()
   int pass = item.pass;
   int fail = item.fail;
 
+  int total = pass + fail;
+
   fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
-  fprintf (stderr, "%s</%s> // %s%d%s passed %s%d%s failed%s\n", C (GRAY),
-           item.name, C (BGREEN), pass, C (GRAY), C (BRED), fail, C (GRAY),
-           C (RESET));
+
+  if (pass == total)
+    fprintf (stderr, "%sPASSED%s (%s%d%s)%s\n", C (BGREEN), C (GRAY),
+             C (BGREEN), pass, C (GRAY), C (RESET));
+
+  else if (fail == total)
+    fprintf (stderr, "%sFAILED%s (%s%d%s)%s\n", C (BRED), C (GRAY), C (BRED),
+             fail, C (GRAY), C (RESET));
+
+  else
+    fprintf (stderr, "%sPARTIAL%s (%s%d%s passed %s%d%s failed) %s\n",
+             C (BYELLOW), C (GRAY), C (BGREEN), pass, C (GRAY), C (BRED), fail,
+             C (GRAY), C (RESET));
 
   case_stack[case_stack_depth - 1].pass += pass;
   case_stack[case_stack_depth - 1].fail += fail;
