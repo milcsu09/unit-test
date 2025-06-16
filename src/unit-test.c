@@ -1,7 +1,9 @@
+#define _POSIX_C_SOURCE 200809L
 #include "unit-test.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 
@@ -18,7 +20,7 @@
 #define C(code) color_allowed ? code : ""
 
 
-#define CASE_STACK_SIZE 1024
+#define CASE_STACK_SIZE 64
 
 
 struct stack_item
@@ -63,17 +65,23 @@ ut_push_case (const char *name)
 {
   ut_init ();
 
+  if (case_stack_depth >= CASE_STACK_SIZE)
+    {
+      fprintf (stderr, "Too many nested cases (max %d).\n", CASE_STACK_SIZE);
+      abort ();
+    }
+
   if (case_stack_depth == case_stack_previous_depth)
     fprintf (stderr, "\n");
 
-  fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
+  fprintf (stderr, "%*.s", (int)case_stack_depth * UT_INDENT, "");
   fprintf (stderr, "%s%s%s\n", C (BGRAY), name, C (RESET));
 
   struct stack_item item;
 
+  item.name = name;
   item.pass = 0;
   item.fail = 0;
-  item.name = name;
 
   case_stack[case_stack_depth++] = item;
 }
@@ -95,20 +103,21 @@ ut_pop_case ()
 
   int total = pass + fail;
 
-  fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
+  fprintf (stderr, "%*.s", (int)case_stack_depth * UT_INDENT, "");
 
   if (pass == total)
-    fprintf (stderr, "%sPASSED%s (%s%d%s)%s\n", C (BGREEN), C (GRAY),
+    fprintf (stderr, "%sPASSED%s (%s%d%s total)%s\n", C (BGREEN), C (GRAY),
              C (BGREEN), pass, C (GRAY), C (RESET));
 
   else if (fail == total)
-    fprintf (stderr, "%sFAILED%s (%s%d%s)%s\n", C (BRED), C (GRAY), C (BRED),
-             fail, C (GRAY), C (RESET));
+    fprintf (stderr, "%sFAILED%s (%s%d%s total)%s\n", C (BRED), C (GRAY),
+             C (BRED), fail, C (GRAY), C (RESET));
 
   else
-    fprintf (stderr, "%sPARTIAL%s (%s%d%s passed %s%d%s failed) %s\n",
-             C (BYELLOW), C (GRAY), C (BGREEN), pass, C (GRAY), C (BRED), fail,
-             C (GRAY), C (RESET));
+    fprintf (stderr,
+             "%sPARTIAL%s (%s%d%s total %s%d%s passed %s%d%s failed) %s\n",
+             C (BYELLOW), C (GRAY), C (BYELLOW), total, C (GRAY), C (BGREEN),
+             pass, C (GRAY), C (BRED), fail, C (GRAY), C (RESET));
 
   case_stack[case_stack_depth - 1].pass += pass;
   case_stack[case_stack_depth - 1].fail += fail;
@@ -122,7 +131,7 @@ ut_passed (const char *file, int line)
 
   case_stack[case_stack_depth - 1].pass++;
 
-  fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
+  fprintf (stderr, "%*.s", (int)case_stack_depth * UT_INDENT, "");
   fprintf (stderr, "%s:%d: %sPASSED%s\n", file, line, C (BGREEN), C (RESET));
 }
 
@@ -134,7 +143,7 @@ ut_failed (const char *file, int line, const char *format, ...)
 
   case_stack[case_stack_depth - 1].fail++;
 
-  fprintf (stderr, "%*.s", (int)case_stack_depth * 2, "");
+  fprintf (stderr, "%*.s", (int)case_stack_depth * UT_INDENT, "");
   fprintf (stderr, "%s:%d: %sFAILED%s: %s", file, line, C (BRED), C (RESET),
            C (BOLD));
 
@@ -146,19 +155,5 @@ ut_failed (const char *file, int line, const char *format, ...)
   va_end (args);
 
   fprintf (stderr, "%s\n", C (RESET));
-}
-
-
-void
-ut_failed_expect_int (const char *file, int line, int a, int b)
-{
-  ut_failed (file, line, "expected `%d`, got `%d`", a, b);
-}
-
-
-void
-ut_failed_assertion (const char *file, int line, const char *a)
-{
-  ut_failed (file, line, "expected `%s` to be `true`, got `false`", a);
 }
 
